@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Switch, Route} from 'react-router-dom';
 import axios from 'axios';
-import Details from "./components/BizDetails";
+import BizDetails from "./components/BizDetails";
 import Searchbar from "./components/Searchbar";
 import BizSummary from './components/BizSummary';
-import { BizSummaryType, Location } from './types';
+import { BizDetailsType, Location } from './types';
 
 
 function App() {
   const [position, setPostition] = useState<Location>({lat: null, long: null});
-  const [businesses, setBusinesses] = useState<BizSummaryType[]>([]);
+  const [businesses, setBusinesses] = useState<BizDetailsType[]>([]);
 
   useEffect(() => {
     if ("geolocation" in navigator) {
@@ -22,7 +22,6 @@ function App() {
       // TODO: add use error messages
       console.log("No geolocation :(")
     }
-
   }, []);
 
   const getBusinesses = (input: string) => {
@@ -43,8 +42,11 @@ function App() {
           id: biz.id,
           name: biz.name,
           distance: biz.distance,
+          rating: biz.rating,
           address: biz.location.display_address,
-          rating: biz.rating
+          phone: biz.phone,
+          price: biz.price,
+          review_count: biz.review_count
         });
       });
       setBusinesses(newBizData);
@@ -57,11 +59,15 @@ function App() {
     <Router>
       <Switch>
         <Route path="/details/:id">
-          <Details/>
+          <BizDetails businesses={businesses}/>
         </Route>
         <Route path="/">
           <Searchbar onSubmit={getBusinesses} />
-          {businesses.map(biz => <BizSummary key={biz.id} {...biz}/>)}
+          {businesses.map(biz => <BizSummary key={biz.id}
+                                             id={biz.id}
+                                             name={biz.name}
+                                             distance={biz.distance}
+                                             rating={biz.rating}/>)}
         </Route>
       </Switch>
     </Router>

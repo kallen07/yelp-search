@@ -7,8 +7,7 @@ const BizSummary = (props: BizSummaryType) => {
     <div>
       <h3>{props.name}</h3>
       <p>Rating: {props.rating}</p>
-      <p>Distance: {props.distance}</p>
-      <div>Address: {props.address}</div>
+      <p>Distance: {(props.distance/1609).toFixed(2)} miles</p>
       <Link to={`/details/${props.id}`}>See details</Link>
     </div>
   );
