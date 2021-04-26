@@ -1,21 +1,20 @@
-import React, { FormEvent, ChangeEvent, useState } from 'react';
+import React, { FormEvent, ChangeEvent } from 'react';
 
 interface SearchbarProps {
+  searchTerm: string,
+  updateSearchTerm: CallableFunction,
   onSubmit: CallableFunction
 }
 
 const Searchbar= (props: SearchbarProps) => {
-  const [input, setInput] = useState("")
 
-  // TODO: argument validation
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
-    setInput(event.target.value);
+    props.updateSearchTerm(event.target.value);
   }
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault()
-    props.onSubmit(input);
-    setInput("");
+    props.onSubmit();
   }
 
   return (
@@ -23,8 +22,8 @@ const Searchbar= (props: SearchbarProps) => {
       <h1>Find a business nearby!</h1>
       <form onSubmit={handleSubmit}>
         <input type="text"
-              placeholder="Hardware stores..."
-              value={input}
+              placeholder="Surprise me!"
+              value={props.searchTerm}
               onChange={handleChange} />
         <button type="submit">Search</button>
         </form>

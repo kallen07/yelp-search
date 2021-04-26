@@ -1,5 +1,5 @@
 import React from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { BizDetailsType } from '../types';
 
 interface BizDetailsProps {
@@ -15,7 +15,12 @@ const BizDetails = (props: BizDetailsProps) => {
   const currentBiz = props.businesses.find(biz => biz.id === id)
 
   if (!currentBiz) {
-    return <h1>Business not found!</h1>
+    return (
+      <div>
+        <h1>Business not found!</h1>
+        <Link to='/'>Back to search</Link>
+      </div>
+    );
   }
 
   return (
@@ -24,8 +29,10 @@ const BizDetails = (props: BizDetailsProps) => {
       <p>Rating: {currentBiz.rating} from {currentBiz.review_count} reviews</p>
       {currentBiz.price && <p>Price: {currentBiz.price}</p>}
       <p>Distance: {(currentBiz.distance/1609).toFixed(2)} miles</p>
-      <p>Phone number: {currentBiz.phone}</p>
-      <div>Address: {currentBiz.address.map((line, index) => <p key={index}>{line}</p>)}</div>
+      {currentBiz.phone && <p>Phone number: {currentBiz.phone}</p>}
+      {currentBiz.address &&
+        <div>Address: {currentBiz.address.map((line, index) => <p key={index}>{line}</p>)}</div>
+      }
     </div>
   );
 };

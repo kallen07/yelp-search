@@ -6,53 +6,78 @@ import Searchbar from "./components/Searchbar";
 import BizSummary from './components/BizSummary';
 import { BizDetailsType, Location } from './types';
 
+const corsAnywhereURL = 'https://cors-anywhere.herokuapp.com/';
+const yelpSearchAPI = 'https://api.yelp.com/v3/businesses/search';
+const APIKey = '3OtNU97WseE5jip1a7PEO7yjx4fIeOGbXUWDsuh-4Rrxoiy7dkZ5hIDA3HRwjax8AK4jc9syhRlfi-NF0nuAt-hph4iOeFbDobfUfHdO7DaQ3gB6G3ZYNjxlcPSAYHYx'
+
 
 function App() {
+  const [geolocationErr, setGeolocationErr] = useState<string>("");
   const [position, setPostition] = useState<Location>({lat: null, long: null});
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [yelpAPIErr, setYelpAPIErr] = useState<string>("");
   const [businesses, setBusinesses] = useState<BizDetailsType[]>([]);
 
   useEffect(() => {
+    const handleGeolocationErr = (error: GeolocationPositionError) => {
+      switch(error.code) {
+        case error.PERMISSION_DENIED:
+          setGeolocationErr("Please enable location services and refresh the page!");
+          break;
+        case error.POSITION_UNAVAILABLE || error.TIMEOUT:
+          setGeolocationErr("Sorry, location information is unavailable!");
+          break;
+      };
+    };
+
+    const handleGeolocationSuccess = (position: GeolocationPosition) => {
+      setPostition({lat: position.coords.latitude, long: position.coords.longitude});
+    };
+
     if ("geolocation" in navigator) {
-      console.log("Gelocation is available!")
-      navigator.geolocation.getCurrentPosition((position) => {
-        setPostition({lat: position.coords.latitude, long: position.coords.longitude});
-        console.log("position is", position);
-      });
+      navigator.geolocation.getCurrentPosition(handleGeolocationSuccess, handleGeolocationErr);
     } else {
-      // TODO: add use error messages
-      console.log("No geolocation :(")
+      setGeolocationErr("Geolocation isn't supported by this browser. Try Firefox?")
     }
   }, []);
 
-  const getBusinesses = (input: string) => {
-    console.log('submitted input, value is ', input);
-    axios.get("https://cors-anywhere.herokuapp.com/https://api.yelp.com/v3/businesses/search", {
+  const getBusinesses = () => {
+    axios.get(corsAnywhereURL + yelpSearchAPI, {
       headers: {
-        'Authorization': 'Bearer 3OtNU97WseE5jip1a7PEO7yjx4fIeOGbXUWDsuh-4Rrxoiy7dkZ5hIDA3HRwjax8AK4jc9syhRlfi-NF0nuAt-hph4iOeFbDobfUfHdO7DaQ3gB6G3ZYNjxlcPSAYHYx'
+        'Authorization': 'Bearer ' + APIKey
       },
       params: {
         'latitude': position.lat,
         'longitude': position.long,
-        'term': input
+        'term': searchTerm
       }
     })
     .then(response => {
-      const newBizData = response.data.businesses.map((biz: any) => {
-        return ({
-          id: biz.id,
-          name: biz.name,
-          distance: biz.distance,
-          rating: biz.rating,
-          address: biz.location.display_address,
-          phone: biz.phone,
-          price: biz.price,
-          review_count: biz.review_count
+      if (response.data.total === 0) {
+        setYelpAPIErr("No results returned for " + searchTerm);
+        setSearchTerm("");
+      } else {
+        const newBizData = response.data.businesses.map((biz: any) => {
+          return ({
+            id: biz.id,
+            name: biz.name,
+            distance: biz.distance,
+            rating: biz.rating,
+            address: biz.location.display_address,
+            phone: biz.phone,
+            price: biz.price,
+            review_count: biz.review_count
+          });
         });
-      });
-      setBusinesses(newBizData);
-      console.log(businesses)
+        setBusinesses(newBizData);
+        setYelpAPIErr("");
+        setSearchTerm("");
+      }
     })
-    .catch(err => console.log(err));
+    .catch(error => {
+      setYelpAPIErr(error.response.data.error.code + ": " +
+                    error.response.data.error.description);
+    });
   }
 
   return (
@@ -62,12 +87,17 @@ function App() {
           <BizDetails businesses={businesses}/>
         </Route>
         <Route path="/">
-          <Searchbar onSubmit={getBusinesses} />
-          {businesses.map(biz => <BizSummary key={biz.id}
-                                             id={biz.id}
-                                             name={biz.name}
-                                             distance={biz.distance}
-                                             rating={biz.rating}/>)}
+          {geolocationErr ?
+            <p>{geolocationErr}</p> :
+            <Searchbar searchTerm={searchTerm} updateSearchTerm={setSearchTerm} onSubmit={getBusinesses} />}
+          {yelpAPIErr && <p>Error calling Yelp API. {yelpAPIErr}</p>}
+          {businesses.map(biz => {
+            return <BizSummary key={biz.id}
+                               id={biz.id}
+                               name={biz.name}
+                               distance={biz.distance}
+                               rating={biz.rating}/>
+          })}
         </Route>
       </Switch>
     </Router>
